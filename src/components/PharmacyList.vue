@@ -55,8 +55,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import PharmacyService from '@/services/PharmacyService'; // Assure-toi que le chemin est bon
-import MedicineCard from './MedicineCard.vue';
-import MedicineForm from './MedicineForm.vue';
+import MedicineCard from './MedecineCard.vue';
+import MedicineForm from './MedecineForm.vue';
 
 // --- État (Reactive State) ---
 const medicaments = ref([]);
