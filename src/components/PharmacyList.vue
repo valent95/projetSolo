@@ -19,7 +19,7 @@
     <div v-else>
       <MedicineCard 
         v-for="med in medicaments" 
-        :key="med.id" 
+        :key="med.reference" 
         :medicament="med"
         @delete="deleteMedicament"
         @edit="openEditForm"
@@ -39,6 +39,7 @@
     <MedicineForm 
       v-model="showForm" 
       :medicamentToEdit="selectedMedicament" 
+      :categories="categories"
       @save="handleSave"
     />
     
@@ -54,12 +55,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import axios from 'axios';
 import PharmacyService from '@/services/PharmacyService'; // Assure-toi que le chemin est bon
 import MedicineCard from './MedecineCard.vue';
 import MedicineForm from './MedecineForm.vue';
 
 // --- État (Reactive State) ---
 const medicaments = ref([]);
+const categories = ref([]);
 const loading = ref(false);
 const showForm = ref(false);
 const selectedMedicament = ref(null);
@@ -71,9 +74,11 @@ const snackbar = ref({ show: false, text: '', color: 'success' });
 const loadMedicaments = async () => {
   loading.value = true;
   try {
-    const response = await PharmacyService.getAll();
+    const response = await PharmacyService.getMedicaments();
+    console.log("Réponse du backend:", response.data); // DEBUG
     medicaments.value = response.data;
   } catch (error) {
+    console.error("Erreur chargement:", error);
     showNotification("Erreur lors du chargement des données", "error");
     console.error(error);
   } finally {
@@ -82,17 +87,33 @@ const loadMedicaments = async () => {
 };
 
 // Cycle de vie : on charge dès que le composant est monté
-onMounted(loadMedicaments);
+onMounted(async () => {
+  await loadCategories();
+  await loadMedicaments();
+});
+
+// Charger les catégories
+const loadCategories = async () => {
+  try {
+    const response = await PharmacyService.getCategories();
+    console.log("Catégories chargées:", response.data);
+    categories.value = response.data;
+  } catch (error) {
+    console.error("Erreur chargement catégories:", error);
+  }
+};
 
 // 2. Supprimer [cite: 37]
-const deleteMedicament = async (id) => {
+const deleteMedicament = async (reference) => {
+  console.log("Suppression du médicament avec reference:", reference); // DEBUG
   if (!confirm("Êtes-vous sûr de vouloir supprimer ce médicament ?")) return;
   
   try {
-    await PharmacyService.delete(id);
-    medicaments.value = medicaments.value.filter(m => m.id !== id); // Optimiste UI update
+    await PharmacyService.deleteMedicament(reference);
+    medicaments.value = medicaments.value.filter(m => m.reference !== reference); // Optimiste UI update
     showNotification("Médicament supprimé avec succès");
   } catch (error) {
+    console.error("Erreur suppression:", error.response?.data);
     showNotification("Impossible de supprimer", "error");
   }
 };
@@ -103,43 +124,70 @@ const openAddForm = () => {
   showForm.value = true;
 };
 
-const openEditForm = (med) => {
-  selectedMedicament.value = med; // objet indique une MODIFICATION [cite: 40]
-  showForm.value = true;
+const openEditForm = async (med) => {
+  console.log("Édition du médicament:", med); // DEBUG
+  try {
+    // Charger le médicament complet avec la catégorie
+    const response = await PharmacyService.getMedicamentWithCategorie(med.reference);
+    selectedMedicament.value = response.data;
+    console.log("Médicament complet reçu:", response.data); // DEBUG
+    showForm.value = true;
+  } catch (error) {
+    console.error("Erreur chargement médicament complet:", error);
+    // Fallback : utiliser le medicament partial
+    selectedMedicament.value = med;
+    showForm.value = true;
+  }
 };
 
 const handleSave = async (medData) => {
   try {
-    if (medData.id) {
+    console.log("Données envoyées:", medData); // DEBUG
+    if (medData.reference) {
       // Update
-      await PharmacyService.update(medData);
+      await PharmacyService.updateMedicament(medData);
       showNotification("Médicament modifié");
     } else {
       // Create
-      await PharmacyService.add(medData);
+      await PharmacyService.addMedicament(medData);
       showNotification("Médicament ajouté");
     }
     await loadMedicaments(); // Recharger la liste pour être sûr
   } catch (error) {
+    console.error("Erreur détaillée:", error.response?.data); // DEBUG
     showNotification("Erreur lors de la sauvegarde", "error");
   }
 };
 
 // 4. Gestion Quantité (+1 / -1) [cite: 38, 39]
 const updateQte = async (med, change) => {
-  const newQte = med.qte + change;
+  const newQte = med.unitesEnStock + change;
   if (newQte < 0) return; // Pas de stock négatif
 
-  // On crée une copie pour l'envoi
-  const updatedMed = { ...med, qte: newQte };
+  // On crée une copie nettoyée pour l'envoi - seulement les champs qu'on change
+  const payload = {
+    nom: med.nom,
+    quantiteParUnite: med.quantiteParUnite,
+    prixUnitaire: med.prixUnitaire,
+    unitesEnStock: newQte,
+    unitesCommandees: med.unitesCommandees,
+    niveauDeReappro: med.niveauDeReappro,
+    indisponible: med.indisponible,
+    imageURL: med.imageURL
+    // IMPORTANTE: On n'envoie PAS la catégorie pour ne pas la perdre
+  };
   
   try {
     // Optimistic UI update (mise à jour visuelle immédiate pour la réactivité)
-    const index = medicaments.value.findIndex(m => m.id === med.id);
-    if (index !== -1) medicaments.value[index].qte = newQte;
+    const index = medicaments.value.findIndex(m => m.reference === med.reference);
+    if (index !== -1) medicaments.value[index].unitesEnStock = newQte;
 
-    await PharmacyService.update(updatedMed);
+    // Appeler directement axios pour ne pas transformer avec la catégorie
+    await axios.put(`http://localhost:8080/api/medicaments/${med.reference}`, payload, {
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error) {
+    console.error("Erreur mise à jour quantité:", error.response?.data);
     // Si ça échoue, on remet l'ancienne valeur
     await loadMedicaments();
     showNotification("Erreur de mise à jour du stock", "error");

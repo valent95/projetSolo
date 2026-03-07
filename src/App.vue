@@ -26,3 +26,5 @@
 <script setup>
 import PharmacyList from './components/PharmacyList.vue';
 </script>
+
+// npm run dev
