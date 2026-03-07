@@ -13,7 +13,7 @@
     </v-row>
 
     <v-alert v-else-if="medicaments.length === 0" type="info" variant="tonal" class="mb-4">
-      Aucun médicament dans le stock. Ajoutez-en un !
+      Aucun médicament dans le stock ou erreur de chargement de la base de donnée
     </v-alert>
 
     <div v-else>

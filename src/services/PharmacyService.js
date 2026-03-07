@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL de base de l'API backend
-const BASE_URL = 'http://localhost:8080/api';
+const BASE_URL = 'https://backendminiprojet.onrender.com/api';
 
 // Fonction utilitaire pour transformer les données du formulaire
 const transformMedicamentData = (medicament) => {
