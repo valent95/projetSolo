@@ -142,30 +142,18 @@ const openEditForm = async (med) => {
 
 const handleSave = async (medData) => {
   try {
-    // 1. On prépare l'objet exactement comme Spring Boot l'attend
-    const payloadToSend = {
-      ...medData,
-      // On crée l'objet 'categorie' avec le code sélectionné dans le formulaire
-      categorie: { 
-        code: medData.categorieCode 
-      }
-    };
-    
-    // 2. On supprime 'categorieCode' car Spring Boot n'en a pas besoin et ne le connaît pas
-    delete payloadToSend.categorieCode;
+    console.log("Données du formulaire envoyées au service:", medData);
 
-    console.log("Données formatées envoyées au backend:", payloadToSend); // DEBUG
-
-    if (payloadToSend.reference) {
+    if (medData.reference) {
       // Update
-      await PharmacyService.updateMedicament(payloadToSend);
+      await PharmacyService.updateMedicament(medData);
       showNotification("Médicament modifié");
     } else {
-      // Create
-      await PharmacyService.addMedicament(payloadToSend);
+      // Create - Laisser transformMedicamentData faire la conversion
+      await PharmacyService.addMedicament(medData);
       showNotification("Médicament ajouté");
     }
-    await loadMedicaments(); // Recharger la liste pour être sûr
+    await loadMedicaments();
   } catch (error) {
     console.error("Erreur détaillée:", error.response?.data);
     showNotification("Erreur lors de la sauvegarde", "error");
