@@ -14,9 +14,7 @@ const transformMedicamentData = (medicament) => {
     niveauDeReappro: medicament.niveauDeReappro,
     indisponible: medicament.indisponible,
     imageURL: medicament.imageURL,
-    categorie: {
-      code: medicament.categorieCode
-    }
+    categorieCode: medicament.categorieCode
   };
 };
 
