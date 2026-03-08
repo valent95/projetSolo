@@ -142,19 +142,29 @@ const openEditForm = async (med) => {
 
 const handleSave = async (medData) => {
   try {
-    console.log("Données envoyées:", medData); // DEBUG
-    if (medData.reference) {
+    const payloadToSend = {
+      ...medData,
+      categorie: { 
+        code: medData.categorieCode
+      }
+    };
+    
+    delete payloadToSend.categorieCode;
+
+    console.log("Données formatées envoyées au backend:", payloadToSend); // DEBUG
+
+    if (payloadToSend.reference) {
       // Update
-      await PharmacyService.updateMedicament(medData);
+      await PharmacyService.updateMedicament(payloadToSend);
       showNotification("Médicament modifié");
     } else {
       // Create
-      await PharmacyService.addMedicament(medData);
+      await PharmacyService.addMedicament(payloadToSend);
       showNotification("Médicament ajouté");
     }
     await loadMedicaments(); // Recharger la liste pour être sûr
   } catch (error) {
-    console.error("Erreur détaillée:", error.response?.data); // DEBUG
+    console.error("Erreur détaillée:", error.response?.data);
     showNotification("Erreur lors de la sauvegarde", "error");
   }
 };
@@ -183,7 +193,7 @@ const updateQte = async (med, change) => {
     if (index !== -1) medicaments.value[index].unitesEnStock = newQte;
 
     // Appeler directement axios pour ne pas transformer avec la catégorie
-    await axios.put(`http://localhost:8080/api/medicaments/${med.reference}`, payload, {
+    await axios.put(`https://backendminiprojet.onrender.com/api/medicaments/${med.reference}`, payload, {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
