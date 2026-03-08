@@ -3,7 +3,7 @@ import axios from 'axios';
 // URL de base de l'API backend
 const BASE_URL = 'https://backendminiprojet.onrender.com/api';
 
-// Fonction utilitaire pour transformer les données du formulaire
+//fonction pour la mise en forme de la donnée
 const transformMedicamentData = (medicament) => {
   return {
     nom: medicament.nom,
@@ -14,7 +14,6 @@ const transformMedicamentData = (medicament) => {
     niveauDeReappro: medicament.niveauDeReappro,
     indisponible: medicament.indisponible,
     imageURL: medicament.imageURL,
-    // Envoyer la catégorie comme un objet simple avec le code
     categorie: {
       code: medicament.categorieCode
     }
