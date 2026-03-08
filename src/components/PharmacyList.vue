@@ -142,13 +142,16 @@ const openEditForm = async (med) => {
 
 const handleSave = async (medData) => {
   try {
+    // 1. On prépare l'objet exactement comme Spring Boot l'attend
     const payloadToSend = {
       ...medData,
+      // On crée l'objet 'categorie' avec le code sélectionné dans le formulaire
       categorie: { 
-        code: medData.categorieCode
+        code: medData.categorieCode 
       }
     };
     
+    // 2. On supprime 'categorieCode' car Spring Boot n'en a pas besoin et ne le connaît pas
     delete payloadToSend.categorieCode;
 
     console.log("Données formatées envoyées au backend:", payloadToSend); // DEBUG
