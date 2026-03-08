@@ -63,12 +63,18 @@ watch(() => isOpen.value, (val) => {
 });
 
 // Initialisation des données si on est en mode édition
+// Initialisation des données si on est en mode édition
 watch(() => props.medicamentToEdit, (newVal) => {
   console.log("Reçu dans le formulaire:", newVal); // DEBUG
   if (newVal) {
     localMedicament.value = { ...newVal }; // Copie pour ne pas modifier directement
+    
+    //permet d'afficher la catégorie dans le menu déroulant de l'éditeur
+    if (newVal.categorie && newVal.categorie.code) {
+      localMedicament.value.categorieCode = newVal.categorie.code;
+    }
+
     console.log("categorieCode dans le formulaire:", localMedicament.value.categorieCode); // DEBUG
-    console.log("categorie dans le formulaire:", localMedicament.value.categorie); // DEBUG
     isEditMode.value = true;
   } else {
     localMedicament.value = { categorieCode: '', nom: '', quantiteParUnite: '', prixUnitaire: 0, unitesEnStock: 0, unitesCommandees: 0, niveauDeReappro: 0, indisponible: false, imageURL: '' };
